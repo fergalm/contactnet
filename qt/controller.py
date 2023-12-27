@@ -27,20 +27,24 @@ Homepage
     * Button to create New user.
         * Opens the edit tab on a new idnum 
     
-SearchForm
-    Needs to be written
-SearchResults:
-    Search by tag 
-    Back Button
-    Scrollbar
-ViewForm
-    Back Button
-    Don't pop up, but appear in main dialog
-    Show relationships
-Edit form 
+x SearchForm
+    o Autocomplete
+o SearchResults:
+    x Search by tag 
+    - Back Button
+    x Scrollbar
+o ViewForm
+    - Back Button
+    x Don't pop up, but appear in main dialog
+    x Show relationships
+    x Add links to relationships
+o Edit form 
     Needs to be written 
-Controller:
-    Needs a super-window that stays visible
+o Controller:
+    x Needs a super-window that stays visible
+o View Form
+    o Scroll bar for relationships
+    
 """
 
 class EmptyWidget(QtWidget.QWidget):

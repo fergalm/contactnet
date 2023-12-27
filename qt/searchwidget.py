@@ -72,6 +72,7 @@ class SearchWidget(QtWidget.QWidget):
             #button.clicked.connect(f)
             #layout.addWidget(button)
      
+
     #def handleSearchByTagRequest(self, tag:str):
         #log.info(f"Tag '{tag}' on '{self.name.text()}' was clicked")
         #self.tagSelectedEvent.emit(tag)
