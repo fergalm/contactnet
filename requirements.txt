@@ -1,0 +1,4 @@
+ipdb
+numpy
+pandas
+PyQt5
