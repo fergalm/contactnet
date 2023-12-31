@@ -1,6 +1,8 @@
 from ipdb import set_trace as idebug
 
 import PyQt5.QtWidgets as QtWidget
+import PyQt5.QtCore as QtCore
+import PyQt5.Qt as Qt
 
 from searchwidget import SearchWidget
 import searchresult as sr
@@ -33,11 +35,13 @@ o SearchResults:
     x Search by tag 
     - Back Button
     x Scrollbar
+    o Sort results alphabethically
 o ViewForm
     - Back Button
     x Don't pop up, but appear in main dialog
     x Show relationships
     x Add links to relationships
+    o Scrollbar for relationships
 o Edit form 
     Needs to be written 
 o Controller:
@@ -58,18 +62,26 @@ class MasterController(QtWidget.QDialog):
         QtWidget.QDialog.__init__(self, None)
         self.book = book
         
-        self.searchForm = SearchWidget()
+        #TODO, creating these needs to be a separated method 
+        #than the new-contact form can signal
+        nameCompleter = Qt.QCompleter(book.getNameList(), self)
+        nameCompleter.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        tagCompleter = Qt.QCompleter(book.getTagList(), self)
+        tagCompleter.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+
+        self.searchForm = SearchWidget(nameCompleter, tagCompleter, self)
         self.searchForm.nameSearchRequested.connect(self.searchByName)
         self.searchForm.tagSearchRequested.connect(self.searchByTag)
         
-        self.searchResultForm = sr.SearchResultWidget(None)
+        self.searchResultForm = sr.SearchResultLister(self)
         self.searchResultForm.personSelectedEvent.connect(self.viewPerson)
         self.searchResultForm.tagSelectedEvent.connect(self.searchByTag)
 
-        self.viewContactForm = ViewForm()
+        self.viewContactForm = ViewForm(book)
+        self.viewContactForm.lookupIdRequested.connect(self.viewPerson)
         self.viewContactForm.searchByTagRequested.connect(self.searchByTag)
-
-        self.editContactForm = EmptyWidget()
+        self.viewContactForm.back.clicked.connect(self.viewContactForm.hide)
+        self.viewContactForm.hide()
         
         layout = QtWidget.QVBoxLayout()
         layout.addWidget(self.searchForm)
@@ -103,19 +115,19 @@ class MasterController(QtWidget.QDialog):
        
     def searchByTag(self, tag:str):
         personList = self.book.searchByTag(tag)
-        log.info(str(personList))
+        log.info(f"{len(personList)} results found")
         self.searchResultForm.clear()
         for person in personList:
-            self.searchResultForm.addPerson(person)
+            self.searchResultForm.add(person)
         self.showSearchResultsForm()
         self.searchForm.tagEdit.setText(tag)
         
     def searchByName(self, name:str):
         personList = self.book.searchByName(name)
-        log.info(str(personList))
+        log.info(f"{len(personList)} results found")
         self.searchResultForm.clear()
         for person in personList:
-            self.searchResultForm.addPerson(person)
+            self.searchResultForm.add(person)
         self.showSearchResultsForm()
 
     def viewPerson(self, idnum):
@@ -158,7 +170,7 @@ def main():
     
     #relations = pd.DataFrame(columns = "id1 connection id2".split())
     #book = Book(df, relations)
-    book = load_book("../names.csv")
+    book = load_book("../../names.csv")
 
     controller = MasterController(book)
     controller.searchByName(name="")

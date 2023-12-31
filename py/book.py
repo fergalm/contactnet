@@ -3,6 +3,8 @@ from typing import List
 #import pandas as pd 
 import numpy as np 
 
+from frmbase.flogger import log 
+
 """
 TODO
 
@@ -50,7 +52,15 @@ class Book:
     def setTags(self, idnum:int, tags:List):
         rownum = self.getRowNumForId(idnum)
         self.name_df.loc[rownum, 'tags'] = ",".join(tags)
-        
+ 
+    def getNameList(self):
+        """Return a list of all tags. Used for autocomplete"""
+        return self.name_df.Name.values
+ 
+    def getTagList(self):
+        """Return a list of all tags. Used for autocomplete"""
+        return self.tagDict.keys()
+    
     def updateTags(self, idnum:int, new_tags:List):
         rownum = self.getRowNumForId(idnum)
         tags = self.name_df.iloc[rownum].tags
@@ -78,6 +88,15 @@ class Book:
         personList = self.makePersonList(wh)
         return personList
 
+    def getIdForName(self, name):
+        wh = np.where(self.name_df.Name == name)[0]
+        
+        if len(wh) == 0:
+            raise ValueError(f"No entry matches {name}")
+        if len(wh) > 1:
+            raise ValueError(f"Ambiguous name: {name}")
+        return self.name_df.idnum.iloc[wh[0]]
+    
     def searchByTag(self, tag):
         try:
             matches = self.tagDict[tag]
@@ -157,17 +176,25 @@ class Person:
         tmp = []
         for w in wh:
             rrow = relations.iloc[w]
-            name1 = names[ names.idnum == rrow.id1].Name.iloc[0]
-            name2 = names[ names.idnum == rrow.id2].Name.iloc[0] 
-            tmp.append(f"{name1} is {rrow.connection} {name2}")
+            idnum1 = rrow.id1
+            idnum2 = rrow.id2
+            name1 = names[ names.idnum == idnum1].Name.iloc[0]
+            name2 = names[ names.idnum == idnum2].Name.iloc[0] 
+            relation = Relationship(idnum1, name1, rrow.connection, idnum2, name2)
+            tmp.append(relation)
+            log.info(relation)
 
         wh = np.where(relations.id2 == idnum)[0]
         for w in wh:
             rrow = relations.iloc[w]
-            name1 = names[ names.idnum == rrow.id1].Name.iloc[0]
-            name2 = names[ names.idnum == rrow.id2].Name.iloc[0] 
-            tmp.append(f"{name1} is {rrow.connection} {name2}")
-        
+            idnum1 = rrow.id1
+            idnum2 = rrow.id2
+            name1 = names[ names.idnum == idnum1].Name.iloc[0]
+            name2 = names[ names.idnum == idnum2].Name.iloc[0] 
+            relation = Relationship(idnum1, name1, rrow.connection, idnum2, name2)
+            tmp.append(relation)
+            log.info(relation)
+            
         return Person(name, about, tags, tmp, idnum)
 
     def print(self):
@@ -183,6 +210,15 @@ class Person:
     
 
 class Relationship:
+    def __init__(self, idnum1, name1, connection, idnum2, name2):
+        self.name1 = name1
+        self.name2 = name2
+        self.idnum1 = idnum1
+        self.idnum2 = idnum2
+        self.connection = connection
+
     def __str__(self):
-        print("Printing relationships not implemented")
-     
+        return f"{self.name1} is {self.connection} {self.name2}"
+
+    def __repr__(self):
+        return f"<Relationship between {self.name1} & {self.name2}>"

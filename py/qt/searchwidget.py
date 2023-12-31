@@ -10,7 +10,6 @@ import PyQt5.QtCore as QtCore
 QtCore.Signal = QtCore.pyqtSignal
 
 from frmbase.flogger import log 
-from book import Person 
 
 
 class SearchWidget(QtWidget.QWidget):
@@ -25,16 +24,18 @@ class SearchWidget(QtWidget.QWidget):
     nameSearchRequested = QtCore.Signal('QString')
     tagSearchRequested = QtCore.Signal('QString')
 
-    def __init__(self, parent=None):
+    def __init__(self, nameCompleter, tagCompleter, parent=None):
         QtWidget.QWidget.__init__(self, parent)
                 
         label1 = QtWidget.QLabel("Name")
         self.nameEdit = QtWidget.QLineEdit()
         self.nameEdit.returnPressed.connect(self.handleNameSearchRequest)
+        self.nameEdit.setCompleter(nameCompleter)
 
         label2 = QtWidget.QLabel("Tags")
         self.tagEdit = QtWidget.QLineEdit()
         self.tagEdit.returnPressed.connect(self.handleTagSearchRequest)
+        self.tagEdit.setCompleter(tagCompleter)
         
         layout = QtWidget.QVBoxLayout()
         layout.addWidget(label1)

@@ -24,16 +24,18 @@ class ViewForm(QtWidget.QWidget):
     
     searchByTagRequested = QtCore.Signal('QString')
     backButtonClicked = QtCore.Signal()
+    lookupIdRequested = QtCore.Signal('int')
     
-    #searchByTagRequested = QtCore.Signal()
-    
-    def __init__(self, person=None):
+    def __init__(self, book):
         QtWidget.QWidget.__init__(self, None)
+        self.book = book 
+        self.isModified = False 
         self.setupUi()
-        self.person = person 
-        
-        if person:
-            self.displayPerson(person)
+    
+    def handleModificationEvent(self):
+        self.isModified = True 
+        log.info(f"{self.sender()}")
+        self.save.setDisabled(False)
             
     def setupUi(self):
         layout = QtWidget.QVBoxLayout()
@@ -43,6 +45,7 @@ class ViewForm(QtWidget.QWidget):
         QEdit = QtWidget.QLineEdit
         
         self.nameEdit = QEdit()
+        self.nameEdit.textChanged.connect(self.handleModificationEvent)
         layout.addWidget(QLabel("Name"))
         layout.addWidget(self.nameEdit)
 
@@ -50,18 +53,26 @@ class ViewForm(QtWidget.QWidget):
         layout.addLayout(self.tagsBox)
 
         #Setup relations here 
-        self.relationsBox = QtWidget.QVBoxLayout()
-        layout.addLayout(self.relationsBox)
+        from relationshipview import RelationshipLister
+        self.relationsBox = RelationshipLister(self.book)
+        self.relationsBox.changeMadeEvent.connect(self.handleModificationEvent)
+        self.relationsBox.lookupIdEvent.connect(self.handleSearchByIdEvent)
+        layout.addWidget(self.relationsBox)
         #Setup phone numer and email here
         #TODO
         
         
         self.aboutEdit = QtWidget.QPlainTextEdit()
+        self.aboutEdit.textChanged.connect(self.handleModificationEvent)
         layout.addWidget(QLabel("Notes"))
         layout.addWidget(self.aboutEdit)
 
+        self.save = QtWidget.QPushButton("Save")
+        self.save.setDisabled(True)
         self.back = QtWidget.QPushButton("Back")
         self.back.clicked.connect(self.backButtonClicked)
+        
+        layout.addWidget(self.save)
         layout.addWidget(self.back)
         
         self.setLayout(layout)
@@ -74,16 +85,19 @@ class ViewForm(QtWidget.QWidget):
         
         log.info(f"Filling relationships for {person}")
         log.info(f"{person.relationshipList}")
+        selfid = person.idnum
         for relationship in person.relationshipList:
-             log.debug(str(relationship))
-             widget = DisplayRelationshipWidget(self, relationship)
-             self.relationsBox.addWidget(widget)
-
+            self.relationsBox.add(selfid, relationship)
+        
+        self.isModified = False
+        self.save.setDisabled(True)
+    
     def clearForm(self):
         self.nameEdit.setText("")
         self.aboutEdit.setPlainText("")
+        self.relationsBox.reset()
 
-        clearLayout(self.relationsBox)
+        self.relationsBox.clear()
         clearLayout(self.tagsBox)
 
     def createButtonsForTags(self, tagList):
@@ -104,47 +118,31 @@ class ViewForm(QtWidget.QWidget):
         log.info(f"Requesting a search of the tag {tag}")
         self.searchByTagRequested.emit(tag)
 
-class DisplayRelationshipWidget(QtWidget.QWidget):
-    def __init__(self, parent, relationship):
-        QtWidget.QWidget.__init__(self, parent)
-        
-        log.info(str(relationship))
-        layout = QtWidget.QHBoxLayout()
-        layout.addWidget(QtWidget.QLabel(relationship))
-        #layout.addWidget(QtWidget.QLabel(relationship.id1))
-        #layout.addWidget(QtWidget.QLabel(relationship.connection))
-        #layout.addWidget(QtWidget.QLabel(relationship.id2))
-        self.setLayout(layout)
-
+    def handleSearchByIdEvent(self, idnum):
+        log.info(f"Request received to search for {idnum}")
+        self.lookupIdRequested.emit(idnum)
 
 def clearLayout(layout, nhead=0):
     """Clears all widgets from a layout
-    
-    TODO: Do this recursively with sublayouts too 
+
+    TODO: Do this recursively with sublayouts too
     """
-    
-    log.info(layout.count())
-    while layout.count() > nhead:
-        widget = layout.takeAt(nhead)
-        widget.widget().setParent(None)
-        del widget
+    import utils 
+    utils.clearLayout(layout, nhead)
 
 
+import loadbook 
 def main():
-    #import pandas as pd 
-    #df = pd.read_csv("../names.csv")
-    #df = df.fillna("")
-    #df['tags'] = df.apply(lambda x: ",".join([x.tag1, x.tag2, x.tag3, x.tag4]), axis=1)
-    #df = df[:5]
 
-    relations = [
-        "Susan is mother of Pádraig",
-        "Susan is mother of Róisín",
-        "Linda Thompson is mother of Susan",
-    ]
-    susan = Person("Susan Mullally", "Herself", "Stsci Baltimore".split(), relations, idnum=1)
+    book = loadbook.load_book("../../names.csv")
+
+    person= book.getPerson(193)
+    #person = book.getPerson(10)
     
-    form = ViewForm(susan)
+    form = ViewForm(book)
+    #form.displayPerson(susan)
+    form.displayPerson(person)
+    form.show()
     return form
     
     

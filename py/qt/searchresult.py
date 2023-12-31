@@ -66,111 +66,34 @@ class IndividualSearchResultWidget(QtWidget.QWidget):
         self.tagSelectedEvent.emit(tag)
         
 
-class SearchResultWidget(QtWidget.QWidget):
-    """Displays a list of search results"""
-    
+from widgetlister import WidgetLister
+class SearchResultLister(WidgetLister):
     personSelectedEvent = QtCore.Signal('int')
     tagSelectedEvent = QtCore.Signal('QString')
 
-    
-    #def __init__(self, parent, results:list = None):
-        #QtWidget.QWidget.__init__(self, parent)
+    def __init__(self, parent=None):
+        WidgetLister.__init__(self, parent)
 
-        #layout = QtWidget.QVBoxLayout()
-        
-        #header = QtWidget.QLabel("Search Results")
-        #layout.addWidget(header)
-
-        #results = results or [] 
-        #for result in results:
-            #layout.addWidget(result)
-        #self.setLayout(layout)
-
-    def __init__(self, parent, results:list = None):
-        QtWidget.QWidget.__init__(self, parent)
-
-        groupbox = QtWidget.QGroupBox("Search Results Group Box")
-        self.innerlayout = QtWidget.QVBoxLayout()
-        self.innerlayout.addStretch()
-        
-        header = QtWidget.QLabel("Search Results")
-        self.innerlayout.addWidget(header)
-
-        results = results or [] 
-        for result in results:
-            self.innerlayout.addWidget(result)
-            result.show()
-
-        groupbox.setLayout(self.innerlayout )
-        scroll = QtWidget.QScrollArea()
-        #scroll.setLayout(self.innerlayout)
-        scroll.setWidget(groupbox)
-        scroll.setWidgetResizable(True)
-        scroll.setFixedHeight(400)
-        scroll.setFixedWidth(400)
-
-        lo = QtWidget.QVBoxLayout(self)
-        lo.addWidget(scroll)
-        #lo.addWidget(groupbox)
-        self.setLayout(lo)
-        
-    def addPerson(self, person:Person):
-        log.info(f"{person}")
-        #idebug()
-        widget = IndividualSearchResultWidget(None, person.idnum, person.name, person.tagList, person.about)
+    def add(self, person:Person):
+        #log.info(f"{person}")
+        widget = IndividualSearchResultWidget(self, person.idnum, person.name, person.tagList, person.about)
         widget.tagSelectedEvent.connect(self.tagSelectedEvent)
-        
-        self.innerlayout.insertWidget(self.innerlayout.count(), widget)
-        #log.info(self.innerlayout.count())
         widget.personSelectedEvent.connect(self.personSelectedEvent)
-                
-    def clear(self):
-        log.info("Clearing search results widget")
-        layout = self.innerlayout
+
+        WidgetLister.add(self, widget)
         
-        log.info(layout.count())
-        while layout.count() > 1:
-            widget = layout.takeAt(1)
-            widget.widget().setParent(None)
-            del widget
             
             
 def main():
-    df = pd.read_csv("../names.csv")
-    df = df[:5]
-    df = df.fillna("")
+    import loadbook 
+    book = loadbook.load_book("../../names.csv")
     
-    results = []
-    for i, row in df.iterrows():
-        tags = [row.tag1, row.tag2, row.tag3, row.tag4]
-        res = IndividualSearchResultWidget(None, row.idnum, row.Name, tags, row.about)
-        results.append(res)
         
-    coll = SearchResultWidget(None, results)
-    #coll.clear()
-    return coll
+    personList = book.searchByName("Danny")
+    print(personList)
     
-    
-#class CategoricalFilter(AbstractColumnFilter):
-    #def __init__(self, col, parent=None):
-        #AbstractColumnFilter.__init__(self, parent)
-
-        #self.label = QtWidget.QLabel(col.name)
-
-        #self.col = col
-        #self.idx = np.ones(len(col), dtype=bool)
-        #self.items = set(col)
-        #self.combo = CheckableComboBox()
-        #self.combo.addItems(self.items)
-        #self.combo.model().dataChanged.connect(self.onChange)
-
-        #layout = QtWidget.QVBoxLayout()
-        #layout.addWidget(self.label)
-        #layout.addWidget(self.combo)
-        #self.setLayout(layout)
-
-    #def getFilteredIn(self) -> np.ndarray:
-        ## print('Debug GFI', self.col.name, np.sum(self.idx))
-        #return self.idx.copy()
-
-    
+    lister = SearchResultLister()
+    for person in personList:
+        lister.add(person)
+    lister.show()
+    return lister

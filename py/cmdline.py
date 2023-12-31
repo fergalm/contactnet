@@ -1,5 +1,5 @@
 from ipdb import set_trace as idebug
-from typing import List, Tuple
+from typing import Tuple
 import pandas as pd 
 import numpy as np 
 from book import Book  
